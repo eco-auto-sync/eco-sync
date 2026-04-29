@@ -18,6 +18,9 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
 
+    // IntelliJ Kotlin 플러그인이 이 태스크를 찾으나 Groovy DSL 프로젝트엔 없으므로 빈 태스크 등록
+    tasks.register('prepareKotlinBuildScriptModel')
+
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(25)
