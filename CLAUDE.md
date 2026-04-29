@@ -8,7 +8,8 @@ Google Calendar 등 외부 캘린더 앱에서 ICS 구독으로 자동 확인할
 ```
 eco-sync/
 ├── backend/    # Spring Boot — API 서버 + Batch 서버 (헥사고날 멀티모듈)
-└── frontend/   # Next.js 16 — React + TypeScript + Tailwind CSS
+├── frontend/   # Next.js 16 — React + TypeScript + Tailwind CSS
+└── infra/      # 공통 인프라 (Docker Compose — MySQL, phpMyAdmin)
 ```
 
 ---
@@ -19,7 +20,7 @@ eco-sync/
 
 ```bash
 # 로컬 인프라 (MySQL 3306, phpMyAdmin 8888)
-cd backend/infra/local
+cd infra/local
 cp .env.example .env   # MYSQL_ROOT_PASSWORD, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE 설정
 docker-compose up -d
 
