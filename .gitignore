@@ -1,0 +1,44 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+
+# Backend (Gradle / Spring Boot)
+backend/.gradle
+backend/build/
+backend/out/
+backend/bin/
+backend/HELP.md
+!backend/gradle/wrapper/gradle-wrapper.jar
+!backend/**/src/main/**/build/
+!backend/**/src/test/**/build/
+!backend/**/src/main/**/out/
+!backend/**/src/test/**/out/
+!backend/**/src/main/**/bin/
+!backend/**/src/test/**/bin/
+backend/.apt_generated
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings
+backend/.springBeans
+backend/.sts4-cache
+
+# Frontend (Node.js)
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Environment / Secrets
+**/.env
+**/.env.*
+!**/.env.example

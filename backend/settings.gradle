@@ -1,0 +1,15 @@
+rootProject.name = 'eco-sync'
+
+include(
+    'eco-sync-domain',
+    'eco-sync-application',
+    'eco-sync-infrastructure',
+    'eco-sync-api',
+    'eco-sync-batch'
+)
+
+project(':eco-sync-domain').projectDir = file('eco-sync-domain')
+project(':eco-sync-application').projectDir = file('eco-sync-application')
+project(':eco-sync-infrastructure').projectDir = file('eco-sync-infrastructure')
+project(':eco-sync-api').projectDir = file('eco-sync-api')
+project(':eco-sync-batch').projectDir = file('eco-sync-batch')

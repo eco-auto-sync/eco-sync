@@ -1,0 +1,20 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'application'
+}
+
+dependencies {
+    implementation project(':eco-sync-application')
+    implementation project(':eco-sync-infrastructure')
+    implementation project(':eco-sync-domain')
+
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.boot:spring-boot-starter-quartz'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+}
+
+application {
+    mainClass = 'com.ecosync.batch.EcoSyncBatchApplication'
+}

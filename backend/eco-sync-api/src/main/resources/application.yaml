@@ -1,0 +1,8 @@
+spring:
+  profiles:
+    active: local
+  config:
+    import:
+      - classpath:${spring.profiles.active}/server.yaml
+      - classpath:${spring.profiles.active}/database.yaml
+      - classpath:${spring.profiles.active}/logging.yaml
