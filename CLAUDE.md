@@ -9,6 +9,7 @@ Google Calendar 등 외부 캘린더 앱에서 ICS 구독으로 자동 확인할
 
 ```
 docs/
+├── phase1-spec.md   # Phase 1 기능 명세서 (화면·API·배치·데이터)
 ├── fmp-api.md       # Financial Modeling Prep API 정리
 └── ...
 ```
