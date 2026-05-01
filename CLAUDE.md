@@ -3,13 +3,26 @@
 사용자가 관심 있는 경제 일정(국가별 증시 휴장일, 경제지표 발표일, 기업 실적 발표일)을 선택하면
 Google Calendar 등 외부 캘린더 앱에서 ICS 구독으로 자동 확인할 수 있는 서비스.
 
+## 문서 관리
+
+프로젝트 관련 문서는 `docs/` 폴더에서 관리한다.
+
+```
+docs/
+├── fmp-api.md       # Financial Modeling Prep API 정리
+└── ...
+```
+
+---
+
 ## 모노레포 구조
 
 ```
 eco-sync/
 ├── backend/    # Spring Boot — API 서버 + Batch 서버 (헥사고날 멀티모듈)
 ├── frontend/   # Next.js 16 — React + TypeScript + Tailwind CSS
-└── infra/      # 공통 인프라 (Docker Compose — MySQL, phpMyAdmin)
+├── infra/      # 공통 인프라 (Docker Compose — MySQL, phpMyAdmin)
+└── docs/       # 프로젝트 문서
 ```
 
 ---
