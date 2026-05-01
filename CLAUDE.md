@@ -165,12 +165,3 @@ const subscription = await api.post<Subscription>("/api/subscriptions", {
 Phase 2, 3은 Phase 1의 ICS 인프라(토큰 기반 구독 URL) 위에 빌드됨.
 
 ---
-
-## 노션 워크스페이스
-
-- [프로젝트 홈](https://app.notion.com/p/31d000b65fa780af96eaf4b9ab4a5ecf)
-- [전체 로드맵](https://app.notion.com/p/31d000b65fa7810ca721ec711a2196c2)
-- [Phase 1 상세](https://app.notion.com/p/31d000b65fa781a18010e52008191bbb)
-- [Phase 2 상세](https://app.notion.com/p/31d000b65fa781aba2b4c25cc6e3f739)
-- [백엔드 모듈 설계 (ADR-001)](https://app.notion.com/p/31d000b65fa780d6af8ec0ffcf2ca488)
-- [ERD 설계](https://app.notion.com/p/31d000b65fa781ef92ceeea3b6c9e40e)
