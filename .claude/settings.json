@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmux browser *)",
+      "Bash(cmux close-surface *)",
+      "Bash(cmux list-panes *)",
+      "Bash(cmux list-workspaces *)",
+      "Bash(cmux current-workspace *)"
+    ]
+  }
+}
