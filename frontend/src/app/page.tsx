@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 const phases = [
   {
     label: "Phase 1",
@@ -17,11 +19,11 @@ const phases = [
     title: "기업 실적 발표일",
     description: "관심 기업의 실적 발표일과 D-3 사전 알림을 받아보세요.",
   },
-];
+]
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-20">
+    <main className="flex flex-col items-center px-6 py-24">
       {/* Hero */}
       <section className="flex flex-col items-center gap-4 text-center">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-600">
@@ -29,12 +31,19 @@ export default function Home() {
         </span>
         <h1 className="text-5xl font-bold tracking-tight text-zinc-900">EcoSync</h1>
         <p className="max-w-xl text-lg text-zinc-500 leading-relaxed">
-          관심 있는 경제 일정을 선택하면, Google Calendar 등 캘린더 앱에서 자동으로 확인할 수
-          있어요.
+          관심 있는 경제 일정을 선택하면, Google Calendar 등 캘린더 앱에서 자동으로 확인할 수 있어요.
         </p>
-        <button className="mt-4 rounded-full bg-zinc-900 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700">
-          지금 시작하기
-        </button>
+        <div className="mt-4 flex flex-col items-center gap-3">
+          <Link
+            href="/subscribe"
+            className="rounded-full bg-zinc-900 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700"
+          >
+            지금 시작하기
+          </Link>
+          <Link href="/my" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
+            이미 구독 중이라면? →
+          </Link>
+        </div>
       </section>
 
       {/* Phase cards */}
@@ -50,5 +59,5 @@ export default function Home() {
         ))}
       </section>
     </main>
-  );
+  )
 }
