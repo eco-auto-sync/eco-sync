@@ -9,7 +9,9 @@ Thumbs.db
 *.iml
 *.ipr
 
+# ─────────────────────────────────────────────
 # Backend (Gradle / Spring Boot)
+# ─────────────────────────────────────────────
 backend/.gradle
 backend/build/
 backend/out/
@@ -22,6 +24,8 @@ backend/HELP.md
 !backend/**/src/test/**/out/
 !backend/**/src/main/**/bin/
 !backend/**/src/test/**/bin/
+
+# STS
 backend/.apt_generated
 backend/.classpath
 backend/.factorypath
@@ -30,15 +34,51 @@ backend/.settings
 backend/.springBeans
 backend/.sts4-cache
 
-# Frontend (Node.js)
+# NetBeans
+backend/nbproject/private/
+backend/nbbuild/
+backend/dist/
+backend/nbdist/
+backend/.nb-gradle/
+
+# ─────────────────────────────────────────────
+# Frontend (Next.js / Node.js)
+# ─────────────────────────────────────────────
 frontend/node_modules/
 frontend/.next/
+frontend/out/
+frontend/build/
 frontend/dist/
-frontend/.env
-frontend/.env.local
-frontend/.env.*.local
+frontend/coverage/
 
+# Yarn
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
+
+# TypeScript
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Debug logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Vercel
+frontend/.vercel
+
+# Misc
+*.pem
+
+# ─────────────────────────────────────────────
 # Environment / Secrets
+# ─────────────────────────────────────────────
 **/.env
 **/.env.*
 !**/.env.example
