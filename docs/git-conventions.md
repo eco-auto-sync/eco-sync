@@ -5,11 +5,11 @@
 ## 브랜치 전략
 
 ```
-main ← dev ← feature/TSK-*
-                          bugfix/TSK-*
-                          chore/TSK-*
-                          docs/TSK-*
-                          infra/TSK-*
+main ← dev ← feature/*
+              bugfix/*
+              chore/*
+              docs/*
+              infra/*
 ```
 
 - `main`: 프로덕션 브랜치
@@ -21,11 +21,11 @@ main ← dev ← feature/TSK-*
 ## 브랜치 명명 규칙
 
 ```
-feature/TSK-123-description   # 새 기능
-bugfix/TSK-123-description    # 버그 수정
-chore/TSK-123-description     # 리팩토링, 의존성 업데이트 등
-docs/TSK-123-description      # 문서화
-infra/TSK-123-description     # 인프라/배포
+feature/description   # 새 기능
+bugfix/description    # 버그 수정
+chore/description     # 리팩토링, 의존성 업데이트 등
+docs/description      # 문서화
+infra/description     # 인프라/배포
 ```
 
 ---
@@ -33,7 +33,7 @@ infra/TSK-123-description     # 인프라/배포
 ## 커밋 메시지
 
 ```
-[TYPE-TSK-번호] 제목
+[TYPE] 제목
 
 본문 (선택)
 ```
@@ -53,11 +53,11 @@ infra/TSK-123-description     # 인프라/배포
 **예시**
 
 ```
-[feat-TSK-8] 구독 등록 API 구현
+[feat] 구독 등록 API 구현
 
-[fix-TSK-15] MySQL 한글 데이터 깨짐 현상 해결
+[fix] MySQL 한글 데이터 깨짐 현상 해결
 
-[infra-TSK-2] SQL 스키마 audit 컬럼 추가
+[infra] SQL 스키마 audit 컬럼 추가
 ```
 
 ---
@@ -74,5 +74,5 @@ infra/TSK-123-description     # 인프라/배포
 ## PR 규칙
 
 - 베이스 브랜치: `dev`
-- 제목: `[TYPE-TSK-번호] 작업 요약`
+- 제목: `[TYPE] 작업 요약`
 - Squash Merge 사용
