@@ -10,6 +10,7 @@ Google Calendar 등 외부 캘린더 앱에서 ICS 구독으로 자동 확인할
 - **백엔드 작업** → `backend/CLAUDE.md` 참고
 - **프론트엔드 작업** → `frontend/CLAUDE.md` 참고
 - **인프라 작업** → `infra/CLAUDE.md` 참고
+- **Git 작업** → `docs/git-conventions.md` 참고
 
 ---
 
@@ -25,9 +26,9 @@ eco-sync/
 
 ```
 docs/
-├── phase1-spec.md        # Phase 1 기능 명세서 (화면·API·배치·데이터)
-├── fmp-api.md            # Financial Modeling Prep API 정리
-└── backend-conventions.md  # 백엔드 코딩 컨벤션
+├── phase1-spec.md       # Phase 1 기능 명세서 (화면·API·배치·데이터)
+├── fmp-api.md           # Financial Modeling Prep API 정리
+└── git-conventions.md   # Git 브랜치·커밋·PR 규칙
 ```
 
 ---

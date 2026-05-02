@@ -264,29 +264,3 @@ public class JpaConfig {
 }
 ```
 
----
-
-## Git 컨벤션
-
-### 브랜치
-
-```
-main ← dev ← feature/TSK-*
-                          bugfix/TSK-*
-                          chore/TSK-*
-                          docs/TSK-*
-```
-
-### 커밋 메시지
-
-```
-[TYPE-TSK-번호] 제목
-
-TYPE: feat | fix | refactor | docs | infra | chore | test
-```
-
-### 커밋 그룹핑 원칙
-
-- SQL/인프라 변경은 함께 커밋
-- 레이어별로 분리 커밋 (domain / application / infrastructure / config)
-- 한 커밋에 한 가지 관심사
