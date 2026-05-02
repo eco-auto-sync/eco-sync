@@ -13,10 +13,11 @@ Thumbs.db
 # Backend (Gradle / Spring Boot)
 # ─────────────────────────────────────────────
 backend/.gradle
-backend/build/
-backend/out/
-backend/bin/
+backend/**/build/
+backend/**/out/
+backend/**/bin/
 backend/HELP.md
+backend/env/
 !backend/gradle/wrapper/gradle-wrapper.jar
 !backend/**/src/main/**/build/
 !backend/**/src/test/**/build/
