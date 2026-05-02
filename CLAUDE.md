@@ -108,7 +108,7 @@ GET  /api/subscriptions/{id}/sync           # 수동 동기화
 
 ### DB 스키마
 
-전체 DDL → `docs/schema.sql`
+전체 DDL → `infra/local/sql/01_schema.sql`
 
 | 테이블 | 설명 |
 |---|---|
