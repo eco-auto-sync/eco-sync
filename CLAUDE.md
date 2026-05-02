@@ -108,12 +108,24 @@ GET  /api/subscriptions/{id}/sync           # 수동 동기화
 
 ### DB 스키마
 
-**`users`** — 사용자, `calendar_token` (UUID)으로 고유 ICS URL 생성
-**`user_interests`** — 구독 설정. `interest_type`: COUNTRY / TICKER / IMPORTANCE, `interest_value`: US / AAPL / HIGH
-**`economic_events`** — 경제 일정 마스터. `uid`로 iCal 중복 방지, `event_datetime`은 UTC 저장
+전체 DDL → `docs/schema.sql`
+
+| 테이블 | 설명 |
+|---|---|
+| `subscriptions` | 구독자. `calendar_token`(UUID)으로 ICS URL 생성. 재구독 시 `deleted_at` 복원. |
+| `subscription_interests` | 구독 관심사. `interest_type` + `interest_value`로 Phase 1~3 커버. |
+| `economic_events` | 경제 이벤트 마스터. `uid`(iCal UID) 기준 배치 upsert. `event_date`는 UTC. |
+
+**`subscription_interests` interest_type 값**
+
+| Phase | interest_type | interest_value 예시 |
+|---|---|---|
+| 1 | `COUNTRY` | `KR`, `US`, `JP` |
+| 2 | `IMPORTANCE` | `HIGH`, `MEDIUM`, `LOW` |
+| 3 | `TICKER` | `AAPL`, `005930` |
 
 모든 테이블 소프트 딜리트 (`deleted_at IS NULL` = 활성).
-`user_interests` ↔ `economic_events` 간 DB FK 없음 — 애플리케이션 레벨에서 필터링.
+`subscription_interests` ↔ `economic_events` 간 DB FK 없음 — ICS 생성 시 애플리케이션 레벨에서 `category` + `interest_value` 기준으로 필터링.
 
 ---
 
