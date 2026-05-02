@@ -9,6 +9,7 @@ Google Calendar 등 외부 캘린더 앱에서 ICS 구독으로 자동 확인할
 
 - **백엔드 작업** → `backend/CLAUDE.md` 참고
 - **프론트엔드 작업** → `frontend/CLAUDE.md` 참고
+- **인프라 작업** → `infra/CLAUDE.md` 참고
 
 ---
 
@@ -41,12 +42,3 @@ docs/
 
 Phase 2, 3은 Phase 1의 ICS 인프라(토큰 기반 구독 URL) 위에 빌드됨.
 
----
-
-## 로컬 인프라 실행
-
-```bash
-cd infra/local
-cp .env.example .env   # MYSQL_ROOT_PASSWORD, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE 설정
-docker-compose up -d   # MySQL 3306, phpMyAdmin 8888
-```
