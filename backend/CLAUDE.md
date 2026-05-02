@@ -3,8 +3,6 @@
 Spring Boot 4.0.3 / Java 25 / Gradle 9.3.1 멀티모듈 백엔드.
 헥사고날 아키텍처(Ports & Adapters) 기반으로 API 서버와 Batch 서버를 독립 실행.
 
-**코딩 컨벤션** → `docs/backend-conventions.md` 참고
-
 ---
 
 ## 기술 스택
@@ -127,6 +125,144 @@ eco-sync-api/src/main/resources/
 ```
 
 환경별 실행: `--args='--spring.profiles.active=dev'`
+
+---
+
+## 개발 컨벤션
+
+### Gradle 의존성 규칙
+
+- 모듈 간 의존성에 **`api` 설정 사용 금지** — 모두 `implementation`
+- api/batch 모듈에서 JPA 애노테이션 사용 시 `spring-boot-starter-data-jpa`를 해당 모듈에 직접 선언
+
+### Domain 레이어
+
+기반 클래스 상속 계층:
+
+```
+BaseCreated   (createdAt)
+  └─ BaseUpdated   (+ updatedAt)
+       └─ BaseSoftDelete   (+ deletedAt, softDelete(), restore(), isActive())
+```
+
+- `@SuperBuilder` + `@NoArgsConstructor` + `@Getter` 세트 사용
+- `@SuperBuilder` 이유: MapStruct `toDomain()` 시 상속 필드까지 빌더에 포함해야 함
+- 소프트 딜리트 메서드명: `softDelete()` / `restore()`
+
+```java
+@Getter @SuperBuilder @NoArgsConstructor
+public class Subscription extends BaseSoftDelete {
+    private Long id;
+    private String email;
+    private String calendarToken;
+
+    public static Subscription create(String email) { ... }  // 팩토리 메서드
+}
+```
+
+### Application 레이어
+
+- Output Port 위치: `com.ecosync.application.port.out`
+- 도메인 객체만 파라미터/반환 타입으로 사용 (JPA 엔티티 노출 금지)
+- Spring 의존: `@Service`, `@Transactional` 허용 / JPA, WebClient 금지
+
+### Infrastructure 레이어
+
+**JPA 엔티티 기반 클래스 상속 계층:**
+
+```
+BaseCreatedEntity   (@CreatedBy + createdAt)
+  └─ BaseUpdatedEntity   (+ @LastModifiedBy + updatedAt)
+       └─ BaseSoftDeleteEntity   (+ deletedBy + deletedAt, softDelete(), restore(), isActive())
+```
+
+- `@MappedSuperclass` + `@Getter` (`@SuperBuilder` 불필요 — Hibernate 자동 관리)
+- `@EntityListeners(AuditingEntityListener.class)`는 `BaseCreatedEntity`에만 선언
+- `@CreatedBy`는 `updatable = false` 추가
+- 모든 컬럼에 `@Comment("설명")` 추가
+
+**엔티티 클래스:**
+
+```java
+@Entity @Table(name = "테이블명")
+@Getter @Builder
+@NoArgsConstructor(access = PROTECTED)
+@AllArgsConstructor(access = PRIVATE)
+public class XxxEntity extends BaseSoftDeleteEntity {   // soft delete 없으면 BaseUpdatedEntity
+
+    @Comment("설명")
+    @Id @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    @Comment("설명")
+    @Enumerated(EnumType.STRING)   // enum 필드는 반드시 STRING
+    @Column(...)
+    private SomeEnum someEnum;
+}
+```
+
+- 클래스명: `XxxEntity` (`XxxJpaEntity` 사용 안 함)
+
+**레포지토리:**
+
+- 위치: `com.ecosync.infrastructure.persistence.repository`, 접근 제어 `public`
+- 이름: `XxxJpaRepository`
+- soft delete JPQL은 `@Modifying @Query`로 정의
+
+**MapStruct 매퍼:**
+
+- 메서드 네이밍: `toDomain()`, `toEntity()`, `xyzToDomain()`, `xyzToEntity()`
+- 상속 필드 `ignore` 선언 불필요 — MapStruct 자동 처리
+
+```java
+@Mapper(componentModel = "spring")
+public interface SubscriptionMapper {
+    Subscription toDomain(SubscriptionEntity entity);
+    SubscriptionEntity toEntity(Subscription domain);
+    @Mapping(source = "subscription.id", target = "subscriptionId")
+    SubscriptionInterest interestToDomain(SubscriptionInterestEntity entity);
+    @Mapping(source = "subscriptionId", target = "subscription.id")
+    SubscriptionInterestEntity interestToEntity(SubscriptionInterest domain);
+}
+```
+
+**어댑터:**
+
+- 클래스명: `XxxAdapter`, `@Repository`로 Output Port 구현
+- 신규/기존 분기: `id == null`이면 `mapper.toEntity()`, 기존이면 JPA 엔티티 로드 후 비즈니스 메서드 호출
+
+```java
+if (domain.getId() == null) {
+    entity = mapper.toEntity(domain);
+} else {
+    entity = repository.findById(domain.getId()).orElseThrow(...);
+    if (domain.isActive()) entity.restore();
+    else entity.softDelete();
+}
+```
+
+### JPA / Auditing 설정
+
+**Spring Boot 4.x 유의사항:**
+
+- `@EntityScan` 패키지: `org.springframework.boot.persistence.autoconfigure.EntityScan`
+  (기존 `org.springframework.boot.autoconfigure.domain.EntityScan` 삭제됨)
+- `scanBasePackages`는 컴포넌트 스캔만 설정 — JPA 레포지토리·엔티티 스캔은 `@EnableJpaRepositories` / `@EntityScan` 별도 필요
+
+**JpaConfig 분리 원칙:** api/batch 모듈 각각에 정의. 인프라 모듈에 두지 않는다.
+
+```java
+@Configuration
+@EnableJpaRepositories(basePackages = "com.ecosync.infrastructure.persistence.repository")
+@EntityScan(basePackages = "com.ecosync.infrastructure.persistence.entity")
+@EnableJpaAuditing
+public class JpaConfig {
+    @Bean
+    public AuditorAware<String> auditorProvider() {
+        return () -> Optional.of("test");   // batch는 "system"
+    }
+}
+```
 
 ---
 
