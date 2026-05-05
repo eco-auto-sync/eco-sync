@@ -12,9 +12,11 @@ Spring Boot 4.0.3 / Java 25 / Gradle 9.3.1 멀티모듈 백엔드.
 | 언어 / 빌드 | Java 25, Gradle 9.3.1 |
 | 프레임워크 | Spring Boot 4.0.3 |
 | ORM | Spring Data JPA, Hibernate |
+| 동적 쿼리 | QueryDSL (OpenFeign fork 7.1) |
 | 매핑 | MapStruct 1.5.5.Final |
 | 캘린더 | ical4j 3.2.19 |
 | DB | MySQL 8 (로컬: Docker Compose) |
+| API 문서 | springdoc-openapi 3.0.3 (`/swagger-ui/index.html`) |
 
 ---
 
@@ -38,13 +40,13 @@ eco-sync-batch ──►         ▲
                                   ──► eco-sync-domain
 ```
 
-| 모듈 | Spring-web | JPA | 비고 |
-|---|---|---|---|
-| domain | ✗ | ✗ | 순수 Java |
-| application | Context만 | ✗ | Port 인터페이스 |
-| infrastructure | ✗ | ✓ | Adapter 구현 |
-| api | ✓ | ✓ | bootJar |
-| batch | ✓ | ✓ | bootJar |
+| 모듈 | 주요 의존성 | 비고 |
+|---|---|---|
+| domain | 없음 | 순수 Java |
+| application | spring-context, spring-web, spring-tx | Port 인터페이스 + UseCase 서비스 |
+| infrastructure | spring-data-jpa, querydsl-jpa, mapstruct | Adapter 구현 |
+| api | spring-web, spring-security, springdoc | bootJar |
+| batch | spring-batch | bootJar |
 
 ---
 
@@ -148,6 +150,18 @@ BaseCreated   (createdAt)
 - `@SuperBuilder` + `@NoArgsConstructor` + `@Getter` 세트 사용
 - `@SuperBuilder` 이유: MapStruct `toDomain()` 시 상속 필드까지 빌더에 포함해야 함
 - 소프트 딜리트 메서드명: `softDelete()` / `restore()`
+- **`@SuperBuilder` + Stream 주의**: `.map(x -> Builder.builder()...build()).toList()` 시 타입 추론 실패 → 람다 내 명시적 타입 변수 선언 필요
+
+```java
+// ❌ 컴파일 에러
+.map(code -> SubscriptionInterest.builder()...build()).toList()
+
+// ✅
+.map(code -> {
+    SubscriptionInterest interest = SubscriptionInterest.builder()...build();
+    return interest;
+}).toList()
+```
 
 ```java
 @Getter @SuperBuilder @NoArgsConstructor
@@ -162,9 +176,33 @@ public class Subscription extends BaseSoftDelete {
 
 ### Application 레이어
 
-- Output Port 위치: `com.ecosync.application.port.out`
+- Input Port 위치: `com.ecosync.application.port.in` — UseCase 인터페이스
+- Output Port 위치: `com.ecosync.application.port.out` — 인프라 구현체 계약
+- 서비스 위치: `com.ecosync.application.service` — UseCase 구현
 - 도메인 객체만 파라미터/반환 타입으로 사용 (JPA 엔티티 노출 금지)
 - Spring 의존: `@Service`, `@Transactional` 허용 / JPA, WebClient 금지
+
+**UseCase 인터페이스 패턴** — Command/Result를 inner record로 정의:
+
+```java
+public interface CreateSubscriptionUseCase {
+    record Command(String email, List<String> countryCodes) {}
+    record Result(Long id, String calendarUrl) {}
+    Result create(Command command);
+}
+```
+
+**예외 처리 패턴** — 구체 예외 클래스 없이 `EcoSyncException(ErrorCode)` 직접 사용:
+
+```java
+// ErrorCode에 HTTP 상태코드, 에러 코드 문자열, 메시지 일괄 정의
+throw new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+```
+
+- `ErrorCode` — `HttpStatus` + code + message 보유 (`com.ecosync.application.exception`)
+- `EcoSyncException` — ErrorCode를 받는 단일 예외 클래스
+- `GlobalExceptionHandler` (api 레이어) — `EcoSyncException` → `ErrorResponse` 변환
+- `ErrorResponse` (api 레이어 DTO) — `{ code, message }` 형태
 
 ### Infrastructure 레이어
 
@@ -240,6 +278,37 @@ if (domain.getId() == null) {
     else entity.softDelete();
 }
 ```
+
+### API 레이어
+
+패키지 구조:
+```
+com.ecosync.api/
+├── config/       # SecurityConfig, WebConfig, JpaConfig, SwaggerConfig
+├── controller/   # XxxController, GlobalExceptionHandler
+└── dto/
+    ├── request/  # XxxRequest (record + @Valid 제약)
+    └── response/ # XxxResponse (record), ErrorResponse
+```
+
+- `ErrorResponse` 사용: 모든 에러 응답은 `GlobalExceptionHandler`를 통해 `{ code, message }` 형태로 반환
+- `@Valid` 검증 실패 → `COMMON_001` 코드로 필드 오류 메시지 반환
+
+### QueryDSL
+
+- **라이브러리**: `io.github.openfeign.querydsl` (OpenFeign fork) 7.1 — Jakarta EE 네이티브, classifier 불필요
+- **위치**: `eco-sync-infrastructure` 모듈에만 설정
+- **Q-클래스 생성 위치**: `build/generated/sources/annotationProcessor/java/main/`
+- Gradle 의존성:
+
+```groovy
+implementation "io.github.openfeign.querydsl:querydsl-jpa:7.1"
+annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:7.1:jpa"
+annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+```
+
+- `JPAQueryFactory`는 인프라 모듈 Config 또는 어댑터에서 `EntityManager`를 주입받아 사용
 
 ### JPA / Auditing 설정
 
