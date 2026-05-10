@@ -178,6 +178,62 @@ class SubscriptionServiceTest {
     }
 
     @Nested
+    @DisplayName("cancel() — 구독 취소")
+    class Cancel {
+
+        @Test
+        @DisplayName("활성 구독이면 소프트딜리트 후 저장한다")
+        void cancel_activeSubscription_softDeletesAndSaves() {
+            // given
+            Subscription subscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+
+            given(subscriptionPort.findById(1L)).willReturn(Optional.of(subscription));
+
+            // when
+            sut.cancel(1L);
+
+            // then
+            assertThat(subscription.isActive()).isFalse();
+            then(subscriptionPort).should().save(subscription);
+        }
+
+        @Test
+        @DisplayName("구독이 없으면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void cancel_notFound_throwsSubscriptionNotFound() {
+            // given
+            given(subscriptionPort.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> sut.cancel(1L))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("소프트딜리트된 구독이면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void cancel_softDeletedSubscription_throwsSubscriptionNotFound() {
+            // given
+            Subscription deletedSubscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+            deletedSubscription.softDelete();
+
+            given(subscriptionPort.findById(1L)).willReturn(Optional.of(deletedSubscription));
+
+            // when & then
+            assertThatThrownBy(() -> sut.cancel(1L))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).save(any());
+        }
+    }
+
+    @Nested
     @DisplayName("update() — 구독 수정")
     class Update {
 

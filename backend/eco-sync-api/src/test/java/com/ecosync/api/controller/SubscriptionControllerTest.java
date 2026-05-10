@@ -6,6 +6,7 @@ import com.ecosync.api.support.JsonDataEncoder;
 import com.ecosync.application.exception.EcoSyncException;
 import com.ecosync.application.exception.ErrorCode;
 import com.ecosync.api.dto.request.UpdateSubscriptionRequest;
+import com.ecosync.application.port.in.CancelSubscriptionUseCase;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
 import com.ecosync.application.port.in.UpdateSubscriptionUseCase;
@@ -24,6 +25,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -48,6 +50,9 @@ class SubscriptionControllerTest {
 
     @MockitoBean
     private UpdateSubscriptionUseCase updateSubscriptionUseCase;
+
+    @MockitoBean
+    private CancelSubscriptionUseCase cancelSubscriptionUseCase;
 
     @Nested
     @DisplayName("POST /api/subscriptions — 구독 생성")
@@ -159,6 +164,38 @@ class SubscriptionControllerTest {
                     .andExpect(jsonPath("$.code").value("SUBSCRIPTION_003"));
 
             then(createSubscriptionUseCase).should().create(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/subscriptions/{id} — 구독 취소")
+    class CancelSubscription {
+
+        private static final Long ID = 1L;
+
+        @Test
+        @DisplayName("활성 구독이 있으면 204를 반환한다")
+        void cancel_success() throws Exception {
+            // when & then
+            mockMvc.perform(delete("/api/subscriptions/{id}", ID))
+                    .andExpect(status().isNoContent());
+
+            then(cancelSubscriptionUseCase).should().cancel(ID);
+        }
+
+        @Test
+        @DisplayName("구독이 없으면 404를 반환한다")
+        void cancel_notFound_returns404() throws Exception {
+            // given
+            org.mockito.BDDMockito.willThrow(new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND))
+                    .given(cancelSubscriptionUseCase).cancel(ID);
+
+            // when & then
+            mockMvc.perform(delete("/api/subscriptions/{id}", ID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("SUBSCRIPTION_001"));
+
+            then(cancelSubscriptionUseCase).should().cancel(ID);
         }
     }
 

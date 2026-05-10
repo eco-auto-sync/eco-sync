@@ -5,6 +5,7 @@ import com.ecosync.api.dto.request.UpdateSubscriptionRequest;
 import com.ecosync.api.dto.response.CreateSubscriptionResponse;
 import com.ecosync.api.dto.response.GetSubscriptionResponse;
 import com.ecosync.api.dto.response.UpdateSubscriptionResponse;
+import com.ecosync.application.port.in.CancelSubscriptionUseCase;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
 import com.ecosync.application.port.in.UpdateSubscriptionUseCase;
@@ -28,6 +29,7 @@ public class SubscriptionController {
     private final CreateSubscriptionUseCase createSubscriptionUseCase;
     private final GetSubscriptionUseCase getSubscriptionUseCase;
     private final UpdateSubscriptionUseCase updateSubscriptionUseCase;
+    private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
 
     @Operation(summary = "구독 생성")
     @PostMapping
@@ -46,6 +48,13 @@ public class SubscriptionController {
                                              @Valid @RequestBody UpdateSubscriptionRequest request) {
         UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(id, request.countryCodes());
         return UpdateSubscriptionResponse.from(updateSubscriptionUseCase.update(command));
+    }
+
+    @Operation(summary = "구독 취소")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancel(@PathVariable Long id) {
+        cancelSubscriptionUseCase.cancel(id);
     }
 
     @Operation(summary = "구독 재조회")

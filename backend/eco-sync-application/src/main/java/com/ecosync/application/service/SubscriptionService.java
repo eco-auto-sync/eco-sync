@@ -2,6 +2,7 @@ package com.ecosync.application.service;
 
 import com.ecosync.application.exception.EcoSyncException;
 import com.ecosync.application.exception.ErrorCode;
+import com.ecosync.application.port.in.CancelSubscriptionUseCase;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetCountriesUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscriptionUseCase, UpdateSubscriptionUseCase {
+public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscriptionUseCase, UpdateSubscriptionUseCase, CancelSubscriptionUseCase {
 
     private final SubscriptionPort subscriptionPort;
     private final GetCountriesUseCase getCountriesUseCase;
@@ -107,6 +108,16 @@ public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscr
         subscriptionPort.saveInterests(interests);
 
         return new UpdateSubscriptionUseCase.Result(subscription.getId(), buildCalendarUrl(subscription));
+    }
+
+    @Override
+    public void cancel(Long id) {
+        Subscription subscription = subscriptionPort.findById(id)
+                .filter(Subscription::isActive)
+                .orElseThrow(() -> new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        subscription.softDelete();
+        subscriptionPort.save(subscription);
     }
 
     private String buildCalendarUrl(Subscription subscription) {
