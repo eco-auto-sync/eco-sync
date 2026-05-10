@@ -286,13 +286,50 @@ if (domain.getId() == null) {
 com.ecosync.api/
 ├── config/       # SecurityConfig, WebConfig, JpaConfig, SwaggerConfig
 ├── controller/   # XxxController, GlobalExceptionHandler
+├── swagger/      # XxxApi (Swagger 인터페이스)
 └── dto/
-    ├── request/  # XxxRequest (record + @Valid 제약)
+    ├── request/  # XxxRequest (record + Bean Validation 제약)
     └── response/ # XxxResponse (record), ErrorResponse
 ```
 
 - `ErrorResponse` 사용: 모든 에러 응답은 `GlobalExceptionHandler`를 통해 `{ code, message }` 형태로 반환
 - `@Valid` 검증 실패 → `COMMON_001` 코드로 필드 오류 메시지 반환
+
+### Swagger 가이드라인
+
+**인터페이스 분리 원칙**
+
+Swagger 어노테이션은 `swagger/XxxApi` 인터페이스에 집중하고, 컨트롤러는 Spring MVC 어노테이션만 가진다.
+
+```
+XxxApi (인터페이스)          XxxController (구현체)
+─────────────────────        ─────────────────────
+@Tag                         @RestController
+@Operation                   @RequestMapping
+@Parameter                   @GetMapping / @PostMapping ...
+@Valid (Bean Validation)     @RequestBody / @PathVariable / @RequestParam
+@NotBlank / @Email ...       @ResponseStatus
+```
+
+**Bean Validation 규칙 (중요)**
+
+Bean Validation spec상 구현 클래스는 인터페이스에 없는 파라미터 제약을 추가할 수 없다("강화" 금지). 위반 시 `ConstraintDeclarationException` 발생.
+
+- `@Valid`, `@NotBlank`, `@Email` 등 **모든 제약 어노테이션은 인터페이스에만** 선언
+- 컨트롤러 메서드 파라미터에는 Spring MVC 바인딩 어노테이션만 (`@RequestBody`, `@PathVariable`, `@RequestParam`)
+- 컨트롤러 클래스에 `@Validated` 필수 — `@RequestParam` 수준 제약 활성화
+
+**DTO `@Schema`**
+
+Request/Response record 컴포넌트에 `@Schema(description = "...", example = "...")` 추가:
+
+```java
+public record CreateSubscriptionRequest(
+    @Schema(description = "구독자 이메일", example = "user@example.com")
+    @Email @NotEmpty String email,
+    ...
+) {}
+```
 
 ### QueryDSL
 
