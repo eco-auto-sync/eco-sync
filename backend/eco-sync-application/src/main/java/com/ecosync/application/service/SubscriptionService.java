@@ -64,8 +64,7 @@ public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscr
                 .toList();
         subscriptionPort.saveInterests(interests);
 
-        String calendarUrl = baseUrl + "/api/calendar/" + subscription.getCalendarToken() + "/subscribe";
-        return new CreateSubscriptionUseCase.Result(subscription.getId(), calendarUrl);
+        return new CreateSubscriptionUseCase.Result(subscription.getId(), buildCalendarUrl(subscription));
     }
 
     @Override
@@ -80,8 +79,11 @@ public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscr
                 .map(SubscriptionInterest::getInterestValue)
                 .toList();
 
-        String calendarUrl = baseUrl + "/api/calendar/" + subscription.getCalendarToken() + "/subscribe";
-        return new GetSubscriptionUseCase.Result(subscription.getId(), subscription.getEmail(), countryCodes, calendarUrl);
+        return new GetSubscriptionUseCase.Result(subscription.getId(), subscription.getEmail(), countryCodes, buildCalendarUrl(subscription));
+    }
+
+    private String buildCalendarUrl(Subscription subscription) {
+        return baseUrl + "/api/calendar/" + subscription.getCalendarToken() + "/subscribe";
     }
 
     private void validateCountryCodes(List<String> countryCodes) {
