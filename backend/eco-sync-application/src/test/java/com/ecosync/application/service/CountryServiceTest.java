@@ -12,11 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CountryServiceTest {
 
-    private CountryService countryService;
+    private CountryService sut;
 
     @BeforeEach
     void setUp() {
-        countryService = new CountryService();
+        sut = new CountryService();
     }
 
     @Nested
@@ -27,7 +27,7 @@ class CountryServiceTest {
         @DisplayName("Phase 1 지원 국가 7개를 반환한다")
         void getCountries_returnsAllSupportedCountries() {
             // when
-            List<Country> countries = countryService.getCountries();
+            List<Country> countries = sut.getCountries();
 
             // then
             assertThat(countries).hasSize(7);
@@ -37,7 +37,7 @@ class CountryServiceTest {
         @DisplayName("지원 국가 코드를 모두 포함한다")
         void getCountries_containsExpectedCodes() {
             // when
-            List<String> codes = countryService.getCountries().stream()
+            List<String> codes = sut.getCountries().stream()
                     .map(Country::code)
                     .toList();
 
@@ -49,7 +49,7 @@ class CountryServiceTest {
         @DisplayName("각 국가는 코드, 이름, 거래소, 국기를 모두 갖는다")
         void getCountries_eachCountryHasAllFields() {
             // when
-            List<Country> countries = countryService.getCountries();
+            List<Country> countries = sut.getCountries();
 
             // then
             assertThat(countries).allSatisfy(country -> {

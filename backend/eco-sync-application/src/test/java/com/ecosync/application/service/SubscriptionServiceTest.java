@@ -41,7 +41,7 @@ class SubscriptionServiceTest {
     private GetCountriesUseCase getCountriesUseCase;
 
     @InjectMocks
-    private SubscriptionService subscriptionService;
+    private SubscriptionService sut;
 
     @Captor
     private ArgumentCaptor<List<SubscriptionInterest>> interestsCaptor;
@@ -55,7 +55,7 @@ class SubscriptionServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(subscriptionService, "baseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(sut, "baseUrl", "http://localhost:8080");
     }
 
     @Nested
@@ -78,7 +78,7 @@ class SubscriptionServiceTest {
             given(subscriptionPort.save(any())).willReturn(savedSubscription);
 
             // when
-            Result result = subscriptionService.create(command);
+            Result result = sut.create(command);
 
             // then
             assertThat(result.id()).isEqualTo(1L);
@@ -101,7 +101,7 @@ class SubscriptionServiceTest {
             given(subscriptionPort.save(any())).willReturn(savedSubscription);
 
             // when
-            subscriptionService.create(command);
+            sut.create(command);
 
             // then
             then(subscriptionPort).should().saveInterests(interestsCaptor.capture());
@@ -120,7 +120,7 @@ class SubscriptionServiceTest {
             given(subscriptionPort.findByEmail(EMAIL)).willReturn(Optional.of(activeSubscription));
 
             // when & then
-            assertThatThrownBy(() -> subscriptionService.create(command))
+            assertThatThrownBy(() -> sut.create(command))
                     .isInstanceOf(EcoSyncException.class)
                     .extracting(e -> ((EcoSyncException) e).getErrorCode())
                     .isEqualTo(ErrorCode.DUPLICATE_SUBSCRIPTION);
@@ -145,7 +145,7 @@ class SubscriptionServiceTest {
             given(subscriptionPort.save(deletedSubscription)).willReturn(restoredSubscription);
 
             // when
-            Result result = subscriptionService.create(command);
+            Result result = sut.create(command);
 
             // then
             assertThat(deletedSubscription.isActive()).isTrue();
@@ -164,7 +164,7 @@ class SubscriptionServiceTest {
             given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
 
             // when & then
-            assertThatThrownBy(() -> subscriptionService.create(command))
+            assertThatThrownBy(() -> sut.create(command))
                     .isInstanceOf(EcoSyncException.class)
                     .extracting(e -> ((EcoSyncException) e).getErrorCode())
                     .isEqualTo(ErrorCode.UNSUPPORTED_COUNTRY);
