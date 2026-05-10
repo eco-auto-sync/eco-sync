@@ -11,10 +11,6 @@ import java.time.LocalDateTime;
 @Getter
 public abstract class BaseSoftDeleteEntity extends BaseUpdatedEntity {
 
-    @Comment("삭제자")
-    @Column(name = "deleted_by")
-    private String deletedBy;
-
     @Comment("삭제일시 (NULL = 활성)")
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
