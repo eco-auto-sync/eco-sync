@@ -5,8 +5,10 @@ import com.ecosync.api.dto.request.CreateSubscriptionRequest;
 import com.ecosync.api.support.JsonDataEncoder;
 import com.ecosync.application.exception.EcoSyncException;
 import com.ecosync.application.exception.ErrorCode;
+import com.ecosync.api.dto.request.UpdateSubscriptionRequest;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
+import com.ecosync.application.port.in.UpdateSubscriptionUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +45,9 @@ class SubscriptionControllerTest {
 
     @MockitoBean
     private GetSubscriptionUseCase getSubscriptionUseCase;
+
+    @MockitoBean
+    private UpdateSubscriptionUseCase updateSubscriptionUseCase;
 
     @Nested
     @DisplayName("POST /api/subscriptions — 구독 생성")
@@ -153,6 +159,87 @@ class SubscriptionControllerTest {
                     .andExpect(jsonPath("$.code").value("SUBSCRIPTION_003"));
 
             then(createSubscriptionUseCase).should().create(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/subscriptions/{id} — 구독 수정")
+    class UpdateSubscription {
+
+        private static final Long ID = 1L;
+        private static final List<String> COUNTRY_CODES = List.of("KR", "US");
+        private static final String CALENDAR_URL = "http://localhost:8080/api/calendar/token-uuid/subscribe";
+
+        @Test
+        @DisplayName("유효한 요청이면 200과 수정된 구독 정보를 반환한다")
+        void update_success() throws Exception {
+            // given
+            UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(COUNTRY_CODES);
+            given(updateSubscriptionUseCase.update(any())).willReturn(
+                    new UpdateSubscriptionUseCase.Result(ID, CALENDAR_URL));
+
+            // when & then
+            mockMvc.perform(put("/api/subscriptions/{id}", ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(jsonDataEncoder.encode(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(ID))
+                    .andExpect(jsonPath("$.calendarUrl").value(CALENDAR_URL));
+
+            then(updateSubscriptionUseCase).should().update(
+                    new UpdateSubscriptionUseCase.Command(ID, COUNTRY_CODES));
+        }
+
+        @Test
+        @DisplayName("국가 코드 목록이 비어 있으면 400을 반환한다")
+        void update_emptyCountryCodes_returns400() throws Exception {
+            // given
+            UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(List.of());
+
+            // when & then
+            mockMvc.perform(put("/api/subscriptions/{id}", ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(jsonDataEncoder.encode(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("COMMON_001"));
+
+            then(updateSubscriptionUseCase).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("구독이 없으면 404를 반환한다")
+        void update_notFound_returns404() throws Exception {
+            // given
+            UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(COUNTRY_CODES);
+            given(updateSubscriptionUseCase.update(any()))
+                    .willThrow(new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(put("/api/subscriptions/{id}", ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(jsonDataEncoder.encode(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("SUBSCRIPTION_001"));
+
+            then(updateSubscriptionUseCase).should().update(any());
+        }
+
+        @Test
+        @DisplayName("지원하지 않는 국가 코드가 포함되면 400을 반환한다")
+        void update_unsupportedCountryCode_returns400() throws Exception {
+            // given
+            UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(List.of("KR", "XX"));
+            given(updateSubscriptionUseCase.update(any()))
+                    .willThrow(new EcoSyncException(ErrorCode.UNSUPPORTED_COUNTRY));
+
+            // when & then
+            mockMvc.perform(put("/api/subscriptions/{id}", ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(jsonDataEncoder.encode(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("SUBSCRIPTION_003"));
+
+            then(updateSubscriptionUseCase).should().update(any());
         }
     }
 

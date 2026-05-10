@@ -5,6 +5,7 @@ import com.ecosync.application.exception.ErrorCode;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetCountriesUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
+import com.ecosync.application.port.in.UpdateSubscriptionUseCase;
 import com.ecosync.application.port.out.SubscriptionPort;
 import com.ecosync.domain.subscription.Country;
 import com.ecosync.domain.subscription.InterestType;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscriptionUseCase {
+public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscriptionUseCase, UpdateSubscriptionUseCase {
 
     private final SubscriptionPort subscriptionPort;
     private final GetCountriesUseCase getCountriesUseCase;
@@ -80,6 +81,32 @@ public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscr
                 .toList();
 
         return new GetSubscriptionUseCase.Result(subscription.getId(), subscription.getEmail(), countryCodes, buildCalendarUrl(subscription));
+    }
+
+    @Override
+    public UpdateSubscriptionUseCase.Result update(UpdateSubscriptionUseCase.Command command) {
+        validateCountryCodes(command.countryCodes());
+
+        Subscription subscription = subscriptionPort.findById(command.id())
+                .filter(Subscription::isActive)
+                .orElseThrow(() -> new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        subscriptionPort.softDeleteInterestsBySubscriptionId(subscription.getId());
+
+        Long subscriptionId = subscription.getId();
+        List<SubscriptionInterest> interests = command.countryCodes().stream()
+                .map(code -> {
+                    SubscriptionInterest interest = SubscriptionInterest.builder()
+                            .subscriptionId(subscriptionId)
+                            .interestType(InterestType.COUNTRY)
+                            .interestValue(code)
+                            .build();
+                    return interest;
+                })
+                .toList();
+        subscriptionPort.saveInterests(interests);
+
+        return new UpdateSubscriptionUseCase.Result(subscription.getId(), buildCalendarUrl(subscription));
     }
 
     private String buildCalendarUrl(Subscription subscription) {

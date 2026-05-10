@@ -23,6 +23,11 @@ public class SubscriptionAdapter implements SubscriptionPort {
     private final SubscriptionMapper mapper;
 
     @Override
+    public Optional<Subscription> findById(Long id) {
+        return subscriptionRepository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Subscription> findByEmail(String email) {
         return subscriptionRepository.findByEmail(email).map(mapper::toDomain);
     }

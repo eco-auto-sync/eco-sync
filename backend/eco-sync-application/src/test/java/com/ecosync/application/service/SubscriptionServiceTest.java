@@ -6,6 +6,7 @@ import com.ecosync.application.port.in.CreateSubscriptionUseCase.Command;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase.Result;
 import com.ecosync.application.port.in.GetCountriesUseCase;
 import com.ecosync.application.port.in.GetSubscriptionUseCase;
+import com.ecosync.application.port.in.UpdateSubscriptionUseCase;
 import com.ecosync.application.port.out.SubscriptionPort;
 import com.ecosync.domain.subscription.InterestType;
 import com.ecosync.domain.subscription.Country;
@@ -168,6 +169,108 @@ class SubscriptionServiceTest {
 
             // when & then
             assertThatThrownBy(() -> sut.create(command))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.UNSUPPORTED_COUNTRY);
+
+            then(subscriptionPort).shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("update() — 구독 수정")
+    class Update {
+
+        @Test
+        @DisplayName("활성 구독이 있으면 관심사를 교체하고 결과를 반환한다")
+        void update_activeSubscription_replacesInterests() {
+            // given
+            UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(1L, COUNTRY_CODES);
+            Subscription subscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+
+            given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
+            given(subscriptionPort.findById(1L)).willReturn(Optional.of(subscription));
+
+            // when
+            UpdateSubscriptionUseCase.Result result = sut.update(command);
+
+            // then
+            assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.calendarUrl()).isEqualTo("http://localhost:8080/api/calendar/token-uuid/subscribe");
+
+            then(subscriptionPort).should().softDeleteInterestsBySubscriptionId(1L);
+            then(subscriptionPort).should().saveInterests(any());
+        }
+
+        @Test
+        @DisplayName("관심사는 요청한 국가 코드 수만큼 저장된다")
+        void update_savesInterestsMatchingCountryCodes() {
+            // given
+            UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(1L, COUNTRY_CODES);
+            Subscription subscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+
+            given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
+            given(subscriptionPort.findById(1L)).willReturn(Optional.of(subscription));
+
+            // when
+            sut.update(command);
+
+            // then
+            then(subscriptionPort).should().saveInterests(interestsCaptor.capture());
+            assertThat(interestsCaptor.getValue()).hasSize(COUNTRY_CODES.size());
+        }
+
+        @Test
+        @DisplayName("구독이 없으면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void update_notFound_throwsSubscriptionNotFound() {
+            // given
+            UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(1L, COUNTRY_CODES);
+
+            given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
+            given(subscriptionPort.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> sut.update(command))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).saveInterests(any());
+        }
+
+        @Test
+        @DisplayName("소프트딜리트된 구독이면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void update_softDeletedSubscription_throwsSubscriptionNotFound() {
+            // given
+            UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(1L, COUNTRY_CODES);
+            Subscription deletedSubscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+            deletedSubscription.softDelete();
+
+            given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
+            given(subscriptionPort.findById(1L)).willReturn(Optional.of(deletedSubscription));
+
+            // when & then
+            assertThatThrownBy(() -> sut.update(command))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).saveInterests(any());
+        }
+
+        @Test
+        @DisplayName("지원하지 않는 국가 코드가 포함되면 UNSUPPORTED_COUNTRY 예외를 던진다")
+        void update_unsupportedCountryCode_throwsUnsupportedCountry() {
+            // given
+            UpdateSubscriptionUseCase.Command command = new UpdateSubscriptionUseCase.Command(1L, List.of("KR", "XX"));
+
+            given(getCountriesUseCase.getCountries()).willReturn(SUPPORTED_COUNTRIES);
+
+            // when & then
+            assertThatThrownBy(() -> sut.update(command))
                     .isInstanceOf(EcoSyncException.class)
                     .extracting(e -> ((EcoSyncException) e).getErrorCode())
                     .isEqualTo(ErrorCode.UNSUPPORTED_COUNTRY);
