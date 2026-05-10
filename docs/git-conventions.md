@@ -74,5 +74,23 @@ infra/description     # 인프라/배포
 ## PR 규칙
 
 - 베이스 브랜치: `dev`
-- 제목: `[TYPE] 작업 요약`
+- 제목: `[CATEGORY][TYPE] 작업 요약`
 - Squash Merge 사용
+
+**CATEGORY 종류**
+
+| CATEGORY | 설명 |
+|---|---|
+| `BE` | 백엔드 |
+| `FE` | 프론트엔드 |
+| `INFRA` | 인프라/배포 |
+| `DOCS` | 문서/기획 |
+
+**예시**
+
+```
+[BE][feat] Phase 1 구독 API 구현
+[FE][feat] 국가 선택 화면 구현
+[INFRA][chore] Docker Compose MySQL 설정 추가
+[DOCS] DB 스키마 설계
+```
