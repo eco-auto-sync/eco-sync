@@ -310,6 +310,41 @@ annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
 - `JPAQueryFactory`는 인프라 모듈 Config 또는 어댑터에서 `EntityManager`를 주입받아 사용
 
+### 테스트 작성 가이드라인
+
+**공통 규칙**
+
+- 테스트 대상 클래스 변수명: `sut` (System Under Test) — 컨트롤러 테스트의 `MockMvc`는 제외
+- BDD 스타일: `given().willReturn()` / `then(mock).should()` / `then(mock).shouldHaveNoInteractions()`
+- 구조: `@Nested` + `@DisplayName`으로 메서드/엔드포인트 단위로 그룹핑
+- 공통 픽스처: `private static final` 상수로 선언해 재사용
+
+**컨트롤러 테스트 (`@WebMvcTest`)**
+
+- import: `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`
+- 의존성: `testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'`
+- Mock 주입: `@MockitoBean` (`@MockBean` Spring Boot 4.x에서 제거됨)
+- 설정: `@Import({SecurityConfig.class, JsonDataEncoder.class})`
+- `JsonDataEncoder`: 요청 본문 직렬화용 `@TestComponent` — `ObjectMapper`를 래핑
+- Bean Validation 실패 케이스 → `then(mock).shouldHaveNoInteractions()`
+- 서비스 예외 케이스 → `then(mock).should().method(any())`
+
+**서비스 테스트**
+
+- `@ExtendWith(MockitoExtension.class)` — Spring 컨텍스트 불필요
+- `@InjectMocks` → `sut`, `@Value` 필드는 `ReflectionTestUtils.setField(sut, "fieldName", value)`로 주입
+- `ArgumentCaptor`로 저장된 객체의 세부 값 검증
+
+**Repository 테스트 (`@DataJpaTest`)**
+
+- import: `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
+- 의존성: `testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'`
+- JPA Auditing 활성화: `@Import(TestDataJpaConfig.class)` — `@TestConfiguration @EnableJpaAuditing`
+- infrastructure 모듈에 `@SpringBootConfiguration` 클래스(`InfraTestApplication`) 필요
+- JPA 기본 제공 메서드(`save`, `findById` 등)는 테스트 제외 — 커스텀 정의 메서드만 테스트
+
+---
+
 ### JPA / Auditing 설정
 
 **Spring Boot 4.x 유의사항:**
