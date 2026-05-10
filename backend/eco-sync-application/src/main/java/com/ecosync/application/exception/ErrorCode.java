@@ -11,6 +11,7 @@ public enum ErrorCode {
     // Subscription
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "SUBSCRIPTION_001", "구독 정보를 찾을 수 없습니다."),
     DUPLICATE_SUBSCRIPTION(HttpStatus.CONFLICT, "SUBSCRIPTION_002", "이미 구독 중인 이메일입니다."),
+    UNSUPPORTED_COUNTRY(HttpStatus.BAD_REQUEST, "SUBSCRIPTION_003", "지원하지 않는 국가 코드가 포함되어 있습니다."),
 
     // Calendar
     CALENDAR_NOT_FOUND(HttpStatus.NOT_FOUND, "CALENDAR_001", "캘린더를 찾을 수 없습니다."),
