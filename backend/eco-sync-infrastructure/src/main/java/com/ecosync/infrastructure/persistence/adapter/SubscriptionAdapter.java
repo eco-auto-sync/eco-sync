@@ -58,4 +58,12 @@ public class SubscriptionAdapter implements SubscriptionPort {
     public void softDeleteInterestsBySubscriptionId(Long subscriptionId) {
         interestRepository.softDeleteBySubscriptionId(subscriptionId, LocalDateTime.now());
     }
+
+    @Override
+    public List<SubscriptionInterest> findActiveInterestsBySubscriptionId(Long subscriptionId) {
+        return interestRepository.findBySubscription_IdAndDeletedAtIsNull(subscriptionId)
+                .stream()
+                .map(mapper::interestToDomain)
+                .toList();
+    }
 }

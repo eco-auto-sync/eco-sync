@@ -5,8 +5,11 @@ import com.ecosync.application.exception.ErrorCode;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase.Command;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase.Result;
 import com.ecosync.application.port.in.GetCountriesUseCase;
+import com.ecosync.application.port.in.GetSubscriptionUseCase;
 import com.ecosync.application.port.out.SubscriptionPort;
+import com.ecosync.domain.subscription.InterestType;
 import com.ecosync.domain.subscription.Country;
+import com.ecosync.domain.subscription.InterestType;
 import com.ecosync.domain.subscription.Subscription;
 import com.ecosync.domain.subscription.SubscriptionInterest;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,6 +173,81 @@ class SubscriptionServiceTest {
                     .isEqualTo(ErrorCode.UNSUPPORTED_COUNTRY);
 
             then(subscriptionPort).shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("getByEmail() — 구독 재조회")
+    class GetByEmail {
+
+        private static final GetSubscriptionUseCase.Query QUERY = new GetSubscriptionUseCase.Query(EMAIL);
+
+        @Test
+        @DisplayName("활성 구독이 있으면 id, email, countryCodes, calendarUrl을 반환한다")
+        void getByEmail_activeSubscription_returnsResult() {
+            // given
+            Subscription subscription = Subscription.builder()
+                    .id(1L)
+                    .email(EMAIL)
+                    .calendarToken("token-uuid")
+                    .build();
+
+            List<SubscriptionInterest> interests = COUNTRY_CODES.stream()
+                    .map(code -> {
+                        SubscriptionInterest interest = SubscriptionInterest.builder()
+                                .subscriptionId(1L)
+                                .interestType(InterestType.COUNTRY)
+                                .interestValue(code)
+                                .build();
+                        return interest;
+                    })
+                    .toList();
+
+            given(subscriptionPort.findByEmail(EMAIL)).willReturn(Optional.of(subscription));
+            given(subscriptionPort.findActiveInterestsBySubscriptionId(1L)).willReturn(interests);
+
+            // when
+            GetSubscriptionUseCase.Result result = sut.getByEmail(QUERY);
+
+            // then
+            assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.email()).isEqualTo(EMAIL);
+            assertThat(result.countryCodes()).containsExactlyElementsOf(COUNTRY_CODES);
+            assertThat(result.calendarUrl()).isEqualTo("http://localhost:8080/api/calendar/token-uuid/subscribe");
+        }
+
+        @Test
+        @DisplayName("구독이 없으면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void getByEmail_notFound_throwsSubscriptionNotFound() {
+            // given
+            given(subscriptionPort.findByEmail(EMAIL)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> sut.getByEmail(QUERY))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).findActiveInterestsBySubscriptionId(any());
+        }
+
+        @Test
+        @DisplayName("소프트딜리트된 구독이면 SUBSCRIPTION_NOT_FOUND 예외를 던진다")
+        void getByEmail_softDeletedSubscription_throwsSubscriptionNotFound() {
+            // given
+            Subscription deletedSubscription = Subscription.builder()
+                    .id(1L).email(EMAIL).calendarToken("token-uuid").build();
+            deletedSubscription.softDelete();
+
+            given(subscriptionPort.findByEmail(EMAIL)).willReturn(Optional.of(deletedSubscription));
+
+            // when & then
+            assertThatThrownBy(() -> sut.getByEmail(QUERY))
+                    .isInstanceOf(EcoSyncException.class)
+                    .extracting(e -> ((EcoSyncException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+
+            then(subscriptionPort).should(never()).findActiveInterestsBySubscriptionId(any());
         }
     }
 }

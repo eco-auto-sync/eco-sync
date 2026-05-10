@@ -12,4 +12,5 @@ public interface SubscriptionPort {
     Subscription save(Subscription subscription);
     void saveInterests(List<SubscriptionInterest> interests);
     void softDeleteInterestsBySubscriptionId(Long subscriptionId);
+    List<SubscriptionInterest> findActiveInterestsBySubscriptionId(Long subscriptionId);
 }

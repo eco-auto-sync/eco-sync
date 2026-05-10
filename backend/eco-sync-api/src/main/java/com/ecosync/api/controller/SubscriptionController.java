@@ -2,21 +2,28 @@ package com.ecosync.api.controller;
 
 import com.ecosync.api.dto.request.CreateSubscriptionRequest;
 import com.ecosync.api.dto.response.CreateSubscriptionResponse;
+import com.ecosync.api.dto.response.GetSubscriptionResponse;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
+import com.ecosync.application.port.in.GetSubscriptionUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Subscriptions", description = "구독 관리")
 @RestController
 @RequestMapping("/api/subscriptions")
 @RequiredArgsConstructor
+@Validated
 public class SubscriptionController {
 
     private final CreateSubscriptionUseCase createSubscriptionUseCase;
+    private final GetSubscriptionUseCase getSubscriptionUseCase;
 
     @Operation(summary = "구독 생성")
     @PostMapping
@@ -27,5 +34,12 @@ public class SubscriptionController {
                 request.countryCodes()
         );
         return CreateSubscriptionResponse.from(createSubscriptionUseCase.create(command));
+    }
+
+    @Operation(summary = "구독 재조회")
+    @GetMapping
+    public GetSubscriptionResponse getByEmail(
+            @RequestParam @NotBlank(message = "이메일을 입력해주세요.") @Email(message = "올바른 이메일 형식이 아닙니다.") String email) {
+        return GetSubscriptionResponse.from(getSubscriptionUseCase.getByEmail(new GetSubscriptionUseCase.Query(email)));
     }
 }

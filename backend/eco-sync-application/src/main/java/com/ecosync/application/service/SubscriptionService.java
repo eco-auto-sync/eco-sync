@@ -4,6 +4,7 @@ import com.ecosync.application.exception.EcoSyncException;
 import com.ecosync.application.exception.ErrorCode;
 import com.ecosync.application.port.in.CreateSubscriptionUseCase;
 import com.ecosync.application.port.in.GetCountriesUseCase;
+import com.ecosync.application.port.in.GetSubscriptionUseCase;
 import com.ecosync.application.port.out.SubscriptionPort;
 import com.ecosync.domain.subscription.Country;
 import com.ecosync.domain.subscription.InterestType;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class SubscriptionService implements CreateSubscriptionUseCase {
+public class SubscriptionService implements CreateSubscriptionUseCase, GetSubscriptionUseCase {
 
     private final SubscriptionPort subscriptionPort;
     private final GetCountriesUseCase getCountriesUseCase;
@@ -31,7 +32,7 @@ public class SubscriptionService implements CreateSubscriptionUseCase {
     private String baseUrl;
 
     @Override
-    public Result create(Command command) {
+    public CreateSubscriptionUseCase.Result create(CreateSubscriptionUseCase.Command command) {
         validateCountryCodes(command.countryCodes());
 
         Optional<Subscription> existing = subscriptionPort.findByEmail(command.email());
@@ -64,7 +65,23 @@ public class SubscriptionService implements CreateSubscriptionUseCase {
         subscriptionPort.saveInterests(interests);
 
         String calendarUrl = baseUrl + "/api/calendar/" + subscription.getCalendarToken() + "/subscribe";
-        return new Result(subscription.getId(), calendarUrl);
+        return new CreateSubscriptionUseCase.Result(subscription.getId(), calendarUrl);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GetSubscriptionUseCase.Result getByEmail(GetSubscriptionUseCase.Query query) {
+        Subscription subscription = subscriptionPort.findByEmail(query.email())
+                .filter(Subscription::isActive)
+                .orElseThrow(() -> new EcoSyncException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        List<String> countryCodes = subscriptionPort.findActiveInterestsBySubscriptionId(subscription.getId())
+                .stream()
+                .map(SubscriptionInterest::getInterestValue)
+                .toList();
+
+        String calendarUrl = baseUrl + "/api/calendar/" + subscription.getCalendarToken() + "/subscribe";
+        return new GetSubscriptionUseCase.Result(subscription.getId(), subscription.getEmail(), countryCodes, calendarUrl);
     }
 
     private void validateCountryCodes(List<String> countryCodes) {
