@@ -10,3 +10,17 @@ export interface PageResponse<T> {
   size: number;
   number: number;
 }
+
+export interface Country {
+  code: string;
+  name: string;
+  exchange: string;
+  flag: string;
+}
+
+export interface Subscription {
+  id: number;
+  email: string;
+  countryCodes: string[];
+  calendarUrl: string;
+}
