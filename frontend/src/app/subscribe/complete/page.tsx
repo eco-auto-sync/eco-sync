@@ -1,18 +1,31 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { COUNTRIES, MOCK_SUBSCRIPTION } from '@/lib/mock-data'
+import { api } from '@/lib/api'
+import { useCountries } from '@/hooks/useCountries'
 
 function CompleteContent() {
   const params = useSearchParams()
-  const email = params.get('email') ?? MOCK_SUBSCRIPTION.email
-  const countryCodes = (params.get('countries') ?? MOCK_SUBSCRIPTION.countryCodes.join(',')).split(',')
-  const calendarUrl = MOCK_SUBSCRIPTION.calendarUrl
-  const [copied, setCopied] = useState(false)
+  const router = useRouter()
 
-  const selectedCountries = COUNTRIES.filter((c) => countryCodes.includes(c.code))
+  const id = params.get('id') ? Number(params.get('id')) : null
+  const email = params.get('email') ?? ''
+  const countryCodes = (params.get('countries') ?? '').split(',').filter(Boolean)
+  const calendarUrl = params.get('calendarUrl') ?? ''
+
+  const { countries } = useCountries()
+  const [copied, setCopied] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+
+  useEffect(() => {
+    if (!id || !calendarUrl) router.replace('/subscribe')
+  }, [id, calendarUrl, router])
+
+  const selectedCountries = countries.length > 0
+    ? countries.filter((c) => countryCodes.includes(c.code))
+    : countryCodes.map((code) => ({ code, name: code, exchange: '', flag: '' }))
 
   async function copyUrl() {
     try {
@@ -20,11 +33,25 @@ function CompleteContent() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback: select text
+      // fallback
+    }
+  }
+
+  async function handleCancel() {
+    if (!id) return
+    if (!confirm('구독을 취소하시겠어요?')) return
+    setCancelling(true)
+    try {
+      await api.delete(`/api/subscriptions/${id}`)
+      router.push('/')
+    } catch {
+      alert('구독 취소 중 오류가 발생했어요.')
+      setCancelling(false)
     }
   }
 
   const googleCalendarUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(calendarUrl)}`
+  const editUrl = `/subscribe?id=${id}&email=${encodeURIComponent(email)}&countries=${countryCodes.join(',')}`
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
@@ -36,7 +63,6 @@ function CompleteContent() {
         </p>
       </div>
 
-      {/* URL card */}
       <div className="mt-10 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <p className="mb-2 text-sm font-medium text-zinc-700">구독 국가</p>
         <div className="flex flex-wrap gap-2">
@@ -45,7 +71,7 @@ function CompleteContent() {
               key={c.code}
               className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-700"
             >
-              {c.flag} {c.name}
+              {c.flag && `${c.flag} `}{c.name}
             </span>
           ))}
         </div>
@@ -73,29 +99,32 @@ function CompleteContent() {
         </a>
       </div>
 
-      {/* Guide */}
       <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6">
         <h2 className="font-semibold text-zinc-900">📅 캘린더 등록 방법</h2>
         <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-zinc-600">
           <li>위 버튼을 누르거나, URL을 복사해 Google Calendar에 붙여넣기</li>
           <li>Google Calendar → 다른 캘린더 → URL로 구독</li>
           <li>
-            iOS/macOS 기본 캘린더도 동일하게 <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs">webcal://</code>{' '}
+            iOS/macOS 기본 캘린더도 동일하게{' '}
+            <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs">webcal://</code>{' '}
             URL 붙여넣기로 추가 가능해요
           </li>
         </ol>
       </div>
 
-      {/* Actions */}
       <div className="mt-6 flex gap-3">
         <Link
-          href="/subscribe"
+          href={editUrl}
           className="flex-1 rounded-full border border-zinc-300 bg-white py-3 text-center text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
         >
           구독 수정
         </Link>
-        <button className="flex-1 rounded-full border border-red-200 py-3 text-sm font-medium text-red-500 transition-colors hover:bg-red-50">
-          구독 취소
+        <button
+          onClick={handleCancel}
+          disabled={cancelling}
+          className="flex-1 rounded-full border border-red-200 py-3 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40"
+        >
+          {cancelling ? '취소 중...' : '구독 취소'}
         </button>
       </div>
     </main>
