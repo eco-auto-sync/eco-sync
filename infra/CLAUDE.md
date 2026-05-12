@@ -61,7 +61,7 @@ MYSQL_DATABASE=ecosync_dev
 ### 컬럼 작성 규칙
 
 - 모든 컬럼에 `COMMENT '설명'`
-- audit 컬럼 순서: `created_by`, `created_at`, `updated_by`, `updated_at`, (`deleted_by`, `deleted_at`)
+- audit 컬럼 순서: `created_by`, `created_at`, `updated_by`, `updated_at`, `deleted_at`
 - soft delete 적용 테이블: `deleted_at DATETIME NULL` (NULL = 활성)
 - 기본값: `created_at DEFAULT CURRENT_TIMESTAMP`, `updated_at ON UPDATE CURRENT_TIMESTAMP`
 

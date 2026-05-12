@@ -23,6 +23,11 @@ public class SubscriptionAdapter implements SubscriptionPort {
     private final SubscriptionMapper mapper;
 
     @Override
+    public Optional<Subscription> findById(Long id) {
+        return subscriptionRepository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Subscription> findByEmail(String email) {
         return subscriptionRepository.findByEmail(email).map(mapper::toDomain);
     }
@@ -57,5 +62,13 @@ public class SubscriptionAdapter implements SubscriptionPort {
     @Override
     public void softDeleteInterestsBySubscriptionId(Long subscriptionId) {
         interestRepository.softDeleteBySubscriptionId(subscriptionId, LocalDateTime.now());
+    }
+
+    @Override
+    public List<SubscriptionInterest> findActiveInterestsBySubscriptionId(Long subscriptionId) {
+        return interestRepository.findBySubscription_IdAndDeletedAtIsNull(subscriptionId)
+                .stream()
+                .map(mapper::interestToDomain)
+                .toList();
     }
 }

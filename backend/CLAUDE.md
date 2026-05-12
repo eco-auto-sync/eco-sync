@@ -286,13 +286,50 @@ if (domain.getId() == null) {
 com.ecosync.api/
 ├── config/       # SecurityConfig, WebConfig, JpaConfig, SwaggerConfig
 ├── controller/   # XxxController, GlobalExceptionHandler
+├── swagger/      # XxxApi (Swagger 인터페이스)
 └── dto/
-    ├── request/  # XxxRequest (record + @Valid 제약)
+    ├── request/  # XxxRequest (record + Bean Validation 제약)
     └── response/ # XxxResponse (record), ErrorResponse
 ```
 
 - `ErrorResponse` 사용: 모든 에러 응답은 `GlobalExceptionHandler`를 통해 `{ code, message }` 형태로 반환
 - `@Valid` 검증 실패 → `COMMON_001` 코드로 필드 오류 메시지 반환
+
+### Swagger 가이드라인
+
+**인터페이스 분리 원칙**
+
+Swagger 어노테이션은 `swagger/XxxApi` 인터페이스에 집중하고, 컨트롤러는 Spring MVC 어노테이션만 가진다.
+
+```
+XxxApi (인터페이스)          XxxController (구현체)
+─────────────────────        ─────────────────────
+@Tag                         @RestController
+@Operation                   @RequestMapping
+@Parameter                   @GetMapping / @PostMapping ...
+@Valid (Bean Validation)     @RequestBody / @PathVariable / @RequestParam
+@NotBlank / @Email ...       @ResponseStatus
+```
+
+**Bean Validation 규칙 (중요)**
+
+Bean Validation spec상 구현 클래스는 인터페이스에 없는 파라미터 제약을 추가할 수 없다("강화" 금지). 위반 시 `ConstraintDeclarationException` 발생.
+
+- `@Valid`, `@NotBlank`, `@Email` 등 **모든 제약 어노테이션은 인터페이스에만** 선언
+- 컨트롤러 메서드 파라미터에는 Spring MVC 바인딩 어노테이션만 (`@RequestBody`, `@PathVariable`, `@RequestParam`)
+- 컨트롤러 클래스에 `@Validated` 필수 — `@RequestParam` 수준 제약 활성화
+
+**DTO `@Schema`**
+
+Request/Response record 컴포넌트에 `@Schema(description = "...", example = "...")` 추가:
+
+```java
+public record CreateSubscriptionRequest(
+    @Schema(description = "구독자 이메일", example = "user@example.com")
+    @Email @NotEmpty String email,
+    ...
+) {}
+```
 
 ### QueryDSL
 
@@ -309,6 +346,41 @@ annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 ```
 
 - `JPAQueryFactory`는 인프라 모듈 Config 또는 어댑터에서 `EntityManager`를 주입받아 사용
+
+### 테스트 작성 가이드라인
+
+**공통 규칙**
+
+- 테스트 대상 클래스 변수명: `sut` (System Under Test) — 컨트롤러 테스트의 `MockMvc`는 제외
+- BDD 스타일: `given().willReturn()` / `then(mock).should()` / `then(mock).shouldHaveNoInteractions()`
+- 구조: `@Nested` + `@DisplayName`으로 메서드/엔드포인트 단위로 그룹핑
+- 공통 픽스처: `private static final` 상수로 선언해 재사용
+
+**컨트롤러 테스트 (`@WebMvcTest`)**
+
+- import: `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`
+- 의존성: `testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'`
+- Mock 주입: `@MockitoBean` (`@MockBean` Spring Boot 4.x에서 제거됨)
+- 설정: `@Import({SecurityConfig.class, JsonDataEncoder.class})`
+- `JsonDataEncoder`: 요청 본문 직렬화용 `@TestComponent` — `ObjectMapper`를 래핑
+- Bean Validation 실패 케이스 → `then(mock).shouldHaveNoInteractions()`
+- 서비스 예외 케이스 → `then(mock).should().method(any())`
+
+**서비스 테스트**
+
+- `@ExtendWith(MockitoExtension.class)` — Spring 컨텍스트 불필요
+- `@InjectMocks` → `sut`, `@Value` 필드는 `ReflectionTestUtils.setField(sut, "fieldName", value)`로 주입
+- `ArgumentCaptor`로 저장된 객체의 세부 값 검증
+
+**Repository 테스트 (`@DataJpaTest`)**
+
+- import: `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`
+- 의존성: `testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'`
+- JPA Auditing 활성화: `@Import(TestDataJpaConfig.class)` — `@TestConfiguration @EnableJpaAuditing`
+- infrastructure 모듈에 `@SpringBootConfiguration` 클래스(`InfraTestApplication`) 필요
+- JPA 기본 제공 메서드(`save`, `findById` 등)는 테스트 제외 — 커스텀 정의 메서드만 테스트
+
+---
 
 ### JPA / Auditing 설정
 

@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SubscriptionPort {
+    Optional<Subscription> findById(Long id);
     Optional<Subscription> findByEmail(String email);
     Optional<Subscription> findByCalendarToken(String calendarToken);
     Subscription save(Subscription subscription);
     void saveInterests(List<SubscriptionInterest> interests);
     void softDeleteInterestsBySubscriptionId(Long subscriptionId);
+    List<SubscriptionInterest> findActiveInterestsBySubscriptionId(Long subscriptionId);
 }
